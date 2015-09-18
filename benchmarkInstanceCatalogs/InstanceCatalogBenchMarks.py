@@ -13,11 +13,6 @@ from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 
 
-galDB = CatalogDBObject.from_objid('galaxyTiled')
-class galCopy(InstanceCatalog):
-    column_outputs = ['id', 'raJ2000', 'decJ2000', 'redshift']
-    override_formats = {'raJ2000': '%8e', 'decJ2000': '%8e'}
-
 class QueryBenchMarks(object):
     """
     Class to benchmark `lsst.sims.catalogs.measures.instance.InstanceCatalog` 
@@ -36,7 +31,7 @@ class QueryBenchMarks(object):
     - Do meaningful calculations / plot results even when the number of samples
     is 1.
      """   
-    def __init__(self, boundLens, Ra, Dec, name='catsim', numSamps=3, mjd=572013.,
+    def __init__(self, instanceCatChild, dbObject, boundLens, Ra, Dec, name='catsim', numSamps=3, mjd=572013.,
                  constraints=None, checkpoint=True, df=None):
         """
         boundLens : arrayLike, of floats
@@ -51,6 +46,8 @@ class QueryBenchMarks(object):
         self.name = name
         self.numSamps = numSamps
         self.mjd = mjd
+        self.dbObject = dbObject
+        self.instanceCatChild = instanceCatChild
         
         
         if len(Ra) != len(Dec):
@@ -74,7 +71,7 @@ class QueryBenchMarks(object):
         return self.name + '_coords.dat'
     
     @classmethod
-    def fromCheckPoint(cls, cacheDir, name, mjd=572013., constraints=None, checkpoint=True) :
+    def fromCheckPoint(cls, instanceCatChild, dbObject, cacheDir, name, mjd=572013., constraints=None, checkpoint=True) :
         """
         Instantiate class from saved checkpoint
         
@@ -94,14 +91,15 @@ class QueryBenchMarks(object):
         Dec = np.asarray(dec)
         
         numSamps=len(ra) / len(boundLens)
-        return cls(boundLens=boundLens, Ra=Ra, Dec=Dec, name=name, 
+        return cls(instanceCatChild=instanceCatChild, dbObject=dbObject, 
+                   boundLens=boundLens, Ra=Ra, Dec=Dec, name=name, 
                    numSamps=numSamps, mjd=mjd, constraints=constraints,
                    checkpoint=checkpoint)
     
     @classmethod
-    def fromOpSimDF(cls, boundLens, mjd=57210, numSamps=1, constraints=None,
-                    checkpoint=True, name='catsim_rless24',
-                    opSimHDF='/Users/rbiswas/data/LSST/OpSimData/storage.h5',
+    def fromOpSimDF(cls, instanceCatChild, dbObject, opSimHDF, boundLens,
+                    mjd=57210, numSamps=1,
+                    constraints=None, checkpoint=True, name='test',
                     summaryTable='table'):
         """
         Instantiate using different LSST fields of view from an OpSim run
@@ -129,7 +127,8 @@ class QueryBenchMarks(object):
         ra = np.asarray(ra) - 180.0
         dec = np.asarray(dec)
         
-        return cls(boundLens=boundLens, Ra=ra, Dec=dec, numSamps=numSamps,
+        return cls(instanceCatChild=instanceCatChild, dbObject=dbObject,
+                   boundLens=boundLens, Ra=ra, Dec=dec, numSamps=numSamps,
                    mjd=mjd, name=name)
     
     
@@ -164,6 +163,7 @@ class QueryBenchMarks(object):
         return results
     
     def benchMarkLen(self, ind=None, unique=True):
+
         
         if ind is None:
             ind = 0
@@ -173,7 +173,8 @@ class QueryBenchMarks(object):
         results = []
         
         for num in sampinds:
-            results.append(self.queryResult(boundLens[ind], self.coords[ind + num], Mjd=self.mjd))
+            coords = self.coords[ind + num]
+            results.append(self.queryResult(boundLens[ind], coords=coords, Mjd=self.mjd))
         
         self.coords = np.delete(self.coords, sampinds, axis=0)
         self.boundLens = np.delete(self.boundLens, [ind])
@@ -204,7 +205,7 @@ class QueryBenchMarks(object):
         figure object having plots of the results 
         """
 
-        return self.plotBenchMarks(self.results, dropwidths=dropWidths)
+        return self.plotBenchMarks(self.results, dropwidths=False)
         
     @staticmethod
     def plotBenchMarks(results, dropwidths=False, **kwargs):
@@ -216,6 +217,7 @@ class QueryBenchMarks(object):
         dropwidths :
         """
         
+        res = results
         fig, ax = plt.subplots(2, 2)
         if dropwidths:
                 raise ValueError('Not implemented yet')
@@ -244,12 +246,12 @@ class QueryBenchMarks(object):
         ax[1, 0].set_ylabel('Query Time for Focal Plane')
         ax[1, 0].set_xlabel('Circle Radius')
         ax[1, 1].set_xlabel(r'$\log_{10}(num Objects)$')
-        ax.grid(True)
+        # ax.grid(True)
 
         return fig
     
-    @staticmethod
-    def queryResult(boundLen, coords, Mjd, fieldRadius=1.75):
+    # @staticmethod
+    def queryResult(self, boundLen, coords, Mjd, fieldRadius=1.75):
         """
         benchmarks a single query to download an instance catalog
         of given boundLen, and pointing defined by Ra, Dec in degrees.
@@ -273,20 +275,40 @@ class QueryBenchMarks(object):
                                       bandpassName=['u', 'g', 'r', 'i', 'z', 'y'],
                                       mjd=Mjd)
         tstart = time.time()
-        gals = galCopy(db_obj=galDB, obs_metadata=myObsMD, constraint=None)
-        gals.write_catalog("gals.dat")
+        icc = self.instanceCatChild(db_obj=self.dbObject, obs_metadata=myObsMD,
+                                    constraint=None)
+        icc.write_catalog("icc_tmp.dat")
         tend = time.time()
         deltaT = tend - tstart
         numObjects = sum(1 for _ in open('gals.dat'))
         
         return [boundLen, Ra, Dec, Mjd, numObjects, deltaT, deltaT * (np.float(fieldRadius) / np.float(boundLen))**2.0]     
 
+if __name__ == '__main__':
 
-boundLens = np.arange(0.01, 0.1, 0.05)
-print boundLens
-gcb = QueryBenchMarks.fromOpSimDF(boundLens=boundLens, numSamps=3)
-print gcb.coords.size
-print gcb.boundLens.size
-gcb.aggregateResults()
-fig = gcb.plots
-fig.savefig('catsim_test')
+    # To benchmark an instance Catalog, first look at
+    # the instance of CatalogDBObject
+    galDB = CatalogDBObject.from_objid('galaxyTiled')
+
+    # Create a child of the InstanceCatalog Class
+    class galCopy(InstanceCatalog):
+        column_outputs = ['id', 'raJ2000', 'decJ2000', 'redshift']
+        override_formats = {'raJ2000': '%8e', 'decJ2000': '%8e'}
+
+    # Sizes to be used for querying
+    boundLens = np.arange(0.01, 0.1, 0.05)
+
+    # Instantiate a benchmark object
+    opsimDBHDF ='/Users/rbiswas/data/LSST/OpSimData/storage.h5'
+    gcb = QueryBenchMarks.fromOpSimDF(instanceCatChild=galCopy, dbObject=galDB,
+                                      opSimHDF=opsimDBHDF, boundLens=boundLens,
+                                      numSamps=3, name='test')
+    # Look at the size 
+    print gcb.coords.size
+    print gcb.boundLens.size
+
+    # Now run results
+    gcb.aggregateResults()
+    # Obtain plots
+    fig = gcb.plots
+    fig.savefig('catsim_test.pdf')
