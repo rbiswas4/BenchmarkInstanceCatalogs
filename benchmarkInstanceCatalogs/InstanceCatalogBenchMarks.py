@@ -2,10 +2,10 @@
 
 
 import numpy as np
-import timeit
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from lsst.sims.catalogs.generation.db import CatalogDBObject
 import lsst.sims.catUtils.baseCatalogModels as bcm
 
