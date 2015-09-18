@@ -31,7 +31,8 @@ class QueryBenchMarks(object):
     - Do meaningful calculations / plot results even when the number of samples
     is 1.
      """   
-    def __init__(self, instanceCatChild, dbObject, boundLens, Ra, Dec, name='catsim', numSamps=3, mjd=572013.,
+    def __init__(self, instanceCatChild, dbObject, boundLens, Ra, Dec,
+                 name='catsim', numSamps=3, mjd=572013.,
                  constraints=None, checkpoint=True, df=None):
         """
         boundLens : arrayLike, of floats
@@ -55,7 +56,9 @@ class QueryBenchMarks(object):
         
         
         boundLens = np.asarray(boundLens)
-        numLengths = len(boundLens)
+        np.random.shuffle(boundLens)
+        # numLengths = len(boundLens)
+
         self.boundLens = boundLens
         self.Ra = Ra
         self.Dec = Dec
@@ -71,7 +74,8 @@ class QueryBenchMarks(object):
         return self.name + '_coords.dat'
     
     @classmethod
-    def fromCheckPoint(cls, instanceCatChild, dbObject, cacheDir, name, mjd=572013., constraints=None, checkpoint=True) :
+    def fromCheckPoint(cls, instanceCatChild, dbObject, cacheDir, name,
+                       mjd=572013., constraints=None, checkpoint=True) :
         """
         Instantiate class from saved checkpoint
         
