@@ -4,13 +4,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
-
-from lsst.sims.catalogs.generation.db import CatalogDBObject
-import lsst.sims.catUtils.baseCatalogModels as bcm
-
-from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.measures.instance import InstanceCatalog
-
+from lsst.sims.utils import ObservationMetaData 
+__all__ = ['QueryBenchMarks']
 
 class QueryBenchMarks(object):
     """
@@ -34,10 +29,15 @@ class QueryBenchMarks(object):
                  name='catsim', numSamps=3, mjd=572013.,
                  constraints=None, checkpoint=True, df=None):
         """
-        boundLens : arrayLike, of floats
-                    size of ObsMetaData BoundLengths in degrees
-        Ra : arrayLike, floats, degrees
-        Dec :     
+        instanceCatChild : instance of a class inheriting from
+            `lsst.sims.catalogs.measures.instances.InstanceCatalog`, mandatory
+            Class that will be queried on the database
+        boundLens : array like, of floats
+                size of `lsst.sims.utils.ObsMetaData` BoundLengths in degrees
+        Ra : arrayLike, floats, degrees 
+            length should be sum(num_samples)
+        Dec : arrayLike, floats, degrees
+            length should be sum(num_samples)
         numSamps : arrray-like or float. If array like must have the same len
             as boundLens
          
@@ -55,22 +55,26 @@ class QueryBenchMarks(object):
         if len(Ra) != len(Dec):
             raise ValueError('the lengths of the ra and dec array have to be the same')
         
-        
+        # setup the radii of circles we want to query 
+        # Each radius may be sampled a number of times indicated by numSamps
+        # The order is shuffled to prevent all samples of a particular radius
+        # being evaluated at the same time
         boundLens = np.asarray(boundLens)
         boundLens = boundLens.repeat(self.numSamps)
         np.random.shuffle(boundLens)
-        # numLengths = len(boundLens)
-
         self.boundLens = boundLens
+        
         self.Ra = Ra
         self.Dec = Dec
         self.coords = np.asarray(zip(self.Ra, self.Dec))
+        np.random.shuffle(self.coords)
         
         self.df = df
 
     @property
     def boundLength_fname(self):
         return self.name + '_boundLength.dat'
+
     @property
     def boundLength_fname(self):
         return self.name + '_coords.dat'
@@ -166,6 +170,7 @@ class QueryBenchMarks(object):
         mydict['deltaTwidth'] = map(lambda x: grouped.get_group(x).deltaT.std(), boundLens)
         mydict['deltaTFullwidth'] = map(lambda x: grouped.get_group(x).deltaTFull.std(), boundLens)
         results  = pd.DataFrame(mydict)
+        results.sort('boundLen', inplace=True)
         return results
     
     def benchMarkLen(self, ind=None, unique=True):
@@ -256,7 +261,6 @@ class QueryBenchMarks(object):
 
         return fig
     
-    # @staticmethod
     def queryResult(self, boundLen, coords, Mjd, fieldRadius=1.75):
         """
         benchmarks a single query to download an instance catalog
