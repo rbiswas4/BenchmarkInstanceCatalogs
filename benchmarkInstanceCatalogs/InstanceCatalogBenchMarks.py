@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -39,6 +38,8 @@ class QueryBenchMarks(object):
                     size of ObsMetaData BoundLengths in degrees
         Ra : arrayLike, floats, degrees
         Dec :     
+        numSamps : arrray-like or float. If array like must have the same len
+            as boundLens
          
         """
         self.checkpoint = checkpoint
@@ -56,6 +57,7 @@ class QueryBenchMarks(object):
         
         
         boundLens = np.asarray(boundLens)
+        boundLens = boundLens.repeat(self.numSamps)
         np.random.shuffle(boundLens)
         # numLengths = len(boundLens)
 
@@ -173,14 +175,14 @@ class QueryBenchMarks(object):
             ind = 0
         boundLens = self.boundLens
         
-        sampinds = np.array(range(self.numSamps)) + ind
+        sampinds = ind
         results = []
         
-        for num in sampinds:
-            coords = self.coords[ind + num]
-            results.append(self.queryResult(boundLens[ind], coords=coords, Mjd=self.mjd))
+        # for num in sampinds:
+        # for i, coord in self.coords :
+        results.append(self.queryResult(boundLens[ind], coords=self.coords[ind],                       Mjd=self.mjd))
         
-        self.coords = np.delete(self.coords, sampinds, axis=0)
+        self.coords = np.delete(self.coords, [ind], axis=0)
         self.boundLens = np.delete(self.boundLens, [ind])
     
         df = pd.DataFrame(results, columns=['boundLen', 'Ra', 'Dec', 'Mjd', 'numObjects', 'deltaT', 'deltaTFull'])
@@ -284,7 +286,7 @@ class QueryBenchMarks(object):
         icc.write_catalog("icc_tmp.dat")
         tend = time.time()
         deltaT = tend - tstart
-        numObjects = sum(1 for _ in open('gals.dat'))
+        numObjects = sum(1 for _ in open('icc_tmp.dat'))
         
         return [boundLen, Ra, Dec, Mjd, numObjects, deltaT, deltaT * (np.float(fieldRadius) / np.float(boundLen))**2.0]     
 
@@ -300,7 +302,7 @@ if __name__ == '__main__':
         override_formats = {'raJ2000': '%8e', 'decJ2000': '%8e'}
 
     # Sizes to be used for querying
-    boundLens = np.arange(0.01, 0.1, 0.05)
+    boundLens = np.arange(0.01, 0.2, 0.03)
 
     # Instantiate a benchmark object
     opsimDBHDF ='/Users/rbiswas/data/LSST/OpSimData/storage.h5'
