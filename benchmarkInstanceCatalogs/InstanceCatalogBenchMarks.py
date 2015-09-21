@@ -71,6 +71,10 @@ class QueryBenchMarks(object):
         
         self.df = df
 
+        np.savetxt(name + 'Init_boundlens.dat', self.boundLens)
+        np.savetxt(name + 'Init_numSamps.dat', self.numSamps)
+        np.savetxt(name + 'Init_coords.dat', self.coords)
+
     @property
     def boundLength_fname(self):
         return self.name + '_boundLength.dat'
