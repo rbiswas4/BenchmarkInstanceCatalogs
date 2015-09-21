@@ -17,7 +17,7 @@ class galCopy(InstanceCatalog):
     override_formats = {'raJ2000': '%8e', 'decJ2000': '%8e'}
 
 # Sizes to be used for querying
-boundLens = np.arange(0.05, 1.8, 0.05)
+boundLens = np.arange(0.02, 0.1, 0.02)
 
 # Instantiate a benchmark object
 opsimDBHDF ='/Users/rbiswas/data/LSST/OpSimData/storage.h5'

@@ -44,7 +44,6 @@ class QueryBenchMarks(object):
         """
         self.checkpoint = checkpoint
         self.constraints = constraints
-        self.numSamps = numSamps
         self.name = name
         self.numSamps = numSamps
         self.mjd = mjd
@@ -57,23 +56,27 @@ class QueryBenchMarks(object):
         
         # setup the radii of circles we want to query 
         # Each radius may be sampled a number of times indicated by numSamps
-        # The order is shuffled to prevent all samples of a particular radius
-        # being evaluated at the same time
         boundLens = np.asarray(boundLens)
         boundLens = boundLens.repeat(self.numSamps)
-        np.random.shuffle(boundLens)
         self.boundLens = boundLens
+        self.numSamps = np.broadcast_arrays(numSamps, self.boundLens)[0]
+
         
         self.Ra = Ra
         self.Dec = Dec
         self.coords = np.asarray(zip(self.Ra, self.Dec))
+        
+        # The order is shuffled to prevent all samples of a particular radius
+        # being evaluated at the same time
+        np.random.shuffle(boundLens)
         np.random.shuffle(self.coords)
         
         self.df = df
 
-        np.savetxt(name + 'Init_boundlens.dat', self.boundLens)
-        np.savetxt(name + 'Init_numSamps.dat', self.numSamps)
-        np.savetxt(name + 'Init_coords.dat', self.coords)
+        np.savetxt(name + '_Init_boundlens.dat', self.boundLens)
+        print self.numSamps
+        np.savetxt(name + '_Init_numSamps.dat', self.numSamps)
+        np.savetxt(name + '_Init_coords.dat', self.coords)
 
     @property
     def boundLength_fname(self):
