@@ -74,7 +74,6 @@ class QueryBenchMarks(object):
         self.df = df
 
         np.savetxt(name + '_Init_boundlens.dat', self.boundLens)
-        print self.numSamps
         np.savetxt(name + '_Init_numSamps.dat', self.numSamps)
         np.savetxt(name + '_Init_coords.dat', self.coords)
 
@@ -223,7 +222,9 @@ class QueryBenchMarks(object):
         figure object having plots of the results 
         """
 
-        return self.plotBenchMarks(self.results, dropwidths=False)
+        fig = self.plotBenchMarks(self.results, dropwidths=False)
+        fig.savefig(self.name + '.pdf')
+        return fig
         
     @staticmethod
     def plotBenchMarks(results, dropwidths=False, **kwargs):
