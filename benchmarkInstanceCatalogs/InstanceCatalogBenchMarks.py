@@ -149,7 +149,7 @@ class QueryBenchMarks(object):
 
         return cls(instanceCatChild=instanceCatChild, dbObject=dbObject,
                    boundLens=boundLens, Ra=ra, Dec=dec, numSamps=numSamps,
-                   mjd=mjd, name=name)
+                   mjd=mjd, name=name, constraints=constraints)
 
     @property
     def results(self):
@@ -325,7 +325,7 @@ class QueryBenchMarks(object):
                                       mjd=Mjd)
         tstart = time.time()
         icc = self.instanceCatChild(db_obj=self.dbObject, obs_metadata=myObsMD,
-                                    constraint=None)
+                                    constraint=self.constraints)
         icc.write_catalog("icc_tmp.dat")
         tend = time.time()
         deltaT = tend - tstart
