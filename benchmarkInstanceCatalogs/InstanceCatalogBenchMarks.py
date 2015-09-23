@@ -49,6 +49,7 @@ class QueryBenchMarks(object):
         self.mjd = mjd
         self.dbObject = dbObject
         self.instanceCatChild = instanceCatChild
+
         
         
         if len(Ra) != len(Dec):
@@ -293,7 +294,10 @@ class QueryBenchMarks(object):
                                       mjd=Mjd)
         tstart = time.time()
         icc = self.instanceCatChild(db_obj=self.dbObject, obs_metadata=myObsMD,
-                                    constraint=None)
+                                    constraint=self.constraints)
+        # import pdb
+        # pdb.set_trace()
+        # print icc.config
         icc.write_catalog("icc_tmp.dat")
         tend = time.time()
         deltaT = tend - tstart
@@ -328,4 +332,4 @@ if __name__ == '__main__':
     gcb.aggregateResults()
     # Obtain plots
     fig = gcb.plots
-    fig.savefig('catsim_test.pdf')
+    fig.savefig('small_catsim_test.pdf')
