@@ -25,6 +25,10 @@ class QueryBenchMarks(object):
     - Serialize the output of past queries and record set of outstanding
     requests to checkpoint the state
     - Restart from checkpoints 
+    - record information on both the database being used, internet and user
+    information
+    - record time stamps
+    - record data quantity
     - Do meaningful calculations / plot results even when the number of samples
     is 1.
      """
@@ -63,6 +67,7 @@ class QueryBenchMarks(object):
         boundLens = np.asarray(boundLens)
         boundLens = boundLens.repeat(self.numSamps)
         self.boundLens = boundLens
+
         self.numSamps = np.broadcast_arrays(numSamps, self.boundLens)[0]
 
         self.Ra = Ra
@@ -74,11 +79,17 @@ class QueryBenchMarks(object):
         np.random.shuffle(boundLens)
         np.random.shuffle(self.coords)
 
-        self.df = df
+        if df is None:
+            np.savetxt(name + '_Init_boundlens.dat', self.boundLens)
+            np.savetxt(name + '_Init_numSamps.dat', self.numSamps)
+            np.savetxt(name + '_Init_coords.dat', self.coords)
+            with open(name + 'constraints.dat','w') as fp:
+                if self.constraints is None:
+                    fp.write('None')
+                else:
+                    fp.write(self.constraints)
 
-        np.savetxt(name + '_Init_boundlens.dat', self.boundLens)
-        np.savetxt(name + '_Init_numSamps.dat', self.numSamps)
-        np.savetxt(name + '_Init_coords.dat', self.coords)
+        self.df = df
 
     @property
     def boundLength_fname(self):
@@ -90,6 +101,7 @@ class QueryBenchMarks(object):
 
     @classmethod
     def fromCheckPoint(cls, instanceCatChild, dbObject, cacheDir, name,
+                       dffname=None,
                        mjd=572013., constraints=None, checkpoint=True):
         """
         Instantiate class from saved checkpoint
@@ -100,7 +112,11 @@ class QueryBenchMarks(object):
 
         """
         import os
+        import pandas as pd
 
+        if dffname is None:
+            dffname = name + 'constraints.dat'
+        df = pd.read_hdf(dffname, 'table')
         boundLengthfname = os.path.join(cacheDir, name + '_boundLens.dat')
         boundLens = np.loadtxt(boundLengthfname).flatten()
         coordsfname = os.path.join(cacheDir, name + '_coords.dat')
@@ -109,17 +125,17 @@ class QueryBenchMarks(object):
         Ra = np.asarray(ra)
         Dec = np.asarray(dec)
 
-        numSamps = len(ra) / len(boundLens)
+        numSamps = np.loadtxt(name + '_numSamps.dat')
         return cls(instanceCatChild=instanceCatChild, dbObject=dbObject,
                    boundLens=boundLens, Ra=Ra, Dec=Dec, name=name,
                    numSamps=numSamps, mjd=mjd, constraints=constraints,
-                   checkpoint=checkpoint)
+                   checkpoint=checkpoint, df=df)
 
     @classmethod
     def fromOpSimDF(cls, instanceCatChild, dbObject, opSimHDF, boundLens,
                     mjd=57210, numSamps=1,
                     constraints=None, checkpoint=True, name='test',
-                    summaryTable='table'):
+                    summaryTable='table', df=None):
         """
         Instantiate using different LSST fields of view from an OpSim run
 
@@ -135,11 +151,11 @@ class QueryBenchMarks(object):
         boundLens = np.asarray(boundLens)
         numLengths = len(boundLens)
 
-        df = pd.read_hdf(opSimHDF, 'table')
-        fieldIds = df.fieldID.unique()
+        opsimDf = pd.read_hdf(opSimHDF, 'table')
+        fieldIds = opsimDf.fieldID.unique()
         fid = np.random.choice(fieldIds, size=numLengths * numSamps,
                                replace=False)
-        x = df[df['fieldID'].isin(fid)].groupby('fieldID')
+        x = opsimDf[opsimDf['fieldID'].isin(fid)].groupby('fieldID')
         k = x.groups.keys()
         coords = map(lambda y: x.get_group(y)[['fieldRA', 'fieldDec']].iloc[
                      0].apply(np.degrees).as_matrix(), k)
@@ -149,7 +165,7 @@ class QueryBenchMarks(object):
 
         return cls(instanceCatChild=instanceCatChild, dbObject=dbObject,
                    boundLens=boundLens, Ra=ra, Dec=dec, numSamps=numSamps,
-                   mjd=mjd, name=name, constraints=constraints)
+                   mjd=mjd, name=name, constraints=constraints, df=df)
 
     @property
     def results(self):
