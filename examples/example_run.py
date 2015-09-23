@@ -32,4 +32,4 @@ print gcb.boundLens.size
 gcb.aggregateResults()
 # Obtain plots
 fig = gcb.plots
-fig.savefig('catsim_new.pdf')
+# fig.savefig('catsim_new.pdf')
