@@ -284,25 +284,26 @@ class QueryBenchMarks(object):
         res = results
         res.sort('boundLen', inplace=True)
         if overplotonfig is None:
-            fig, ax = plt.subplots(2, 2)
+            fig = plt.figure()
+            # fig, ax = plt.subplots(2, 2, sharex=[0,2], sharey=True)
+            ax1 = fig.add_subplot(2, 2, 1)
+            ax2 = fig.add_subplot(2, 2, 2, sharey=ax1)
+            ax3 = fig.add_subplot(2, 2, 3, sharex=ax1)
+            ax4 = fig.add_subplot(2, 2, 4, sharex=ax2, sharey=ax3)
         else:
             fig = overplotonfig
-
-        print 'TRying to print dictionary', kwargs 
+        
+        # Check if the format of points is specified through kwargs, 
+        # Else put in default values
         if 'fmto' in kwargs.keys():
             myfmto = kwargs['fmto']
-            print 'fmto found in keys, var myfmto set to', myfmto
         else:
             myfmto = 'ko'
         if 'fmts' in kwargs.keys():
             myfmts = kwargs['fmts']
         else:
             myfmts = 'rs'
-        print myfmto , myfmts
 
-
-        # if dropwidths:
-        #    raise ValueError('Not implemented yet')
 
         # Plot the statistics of the query times with estimates of uncertainty
         fig.axes[0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
@@ -313,6 +314,9 @@ class QueryBenchMarks(object):
                           xerr=np.log(10) * res.numObjectsWidth /
                           res.numObjects,
                           yerr=res.deltaTwidth, fmt=myfmto)
+        # yt = fig.axes[1].get_yticklabels()
+        # print yt
+        # fig.axes[1].set_yticklabels(yt, visible=False)
         fig.axes[2].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
         # ax[1, 0].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
                           fmt=myfmto)
@@ -322,6 +326,9 @@ class QueryBenchMarks(object):
                           res.numObjects,
                           yerr=res.deltaTFullwidth, fmt=myfmto)
 
+        # yt = fig.axes[3].get_yticklabels()
+        # print yt
+        # fig.axes[3].set_yticklabels(yt, visible=False)
         # Plot simple, proportional to area query times to guide the eye
         fig.axes[0].plot(res.boundLen,
         # ax[0, 0].plot(res.boundLen,
@@ -344,6 +351,9 @@ class QueryBenchMarks(object):
 
         # put in a grid
         map(lambda x: x.grid(True), fig.axes)
+
+        # tighten layout of plots
+        fig.set_tight_layout(True)
 
         return fig
 
