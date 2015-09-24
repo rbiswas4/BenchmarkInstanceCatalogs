@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+# To benchmark an instance Catalog, first look at
+# the instance of CatalogDBObject
+import numpy as np
+
+from benchmarkInstanceCatalogs import QueryBenchMarks
+from lsst.sims.catalogs.generation.db import CatalogDBObject
+import lsst.sims.catUtils.baseCatalogModels as bcm
+from lsst.sims.catalogs.measures.instance import InstanceCatalog
+
+galDB = CatalogDBObject.from_objid('galaxyTiled')
+
+# Create a child of the InstanceCatalog Class
+class galCopy(InstanceCatalog):
+    column_outputs = ['id', 'raJ2000', 'decJ2000', 'redshift']
+    override_formats = {'raJ2000': '%8e', 'decJ2000': '%8e'}
+
+# Sizes to be used for querying
+boundLens = np.arange(0.02, 0.1, 0.02)
+
+# Instantiate a benchmark object
+opsimDBHDF ='/Users/rbiswas/data/LSST/OpSimData/storage.h5'
+gcb = QueryBenchMarks.fromOpSimDF(instanceCatChild=galCopy, dbObject=galDB,
+                                  opSimHDF=opsimDBHDF, boundLens=boundLens,
+                                  numSamps=1, name='new_test')
+# Look at the size 
+print gcb.coords.size
+print gcb.boundLens.size
+
+# Now run results
+gcb.aggregateResults()
+# Obtain plots
+fig = gcb.plots
+
+gcb2 = QueryBenchMarks.fromOpSimDF(instanceCatChild=galCopy, dbObject=galDB,
+                                   opSimHDF=opsimDBHDF, boundLens=boundLens,
+                                   constraints='r_ab < 20',
+                                   numSamps=1, name='new_test')
+gcb2.aggregateResults()
+res_gcb2 = gcb2.results
+formats = dict()
+formats['fmto'] = 'bo'
+formats['fmts'] = 'gs'
+print 'In example file', formats
+overplotted_fig = QueryBenchMarks.plotBenchMarks(results=res_gcb2, overplotonfig=fig, **formats)
+overplotted_fig.savefig('overplots.pdf')
+# fig.savefig('catsim_new.pdf')

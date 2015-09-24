@@ -68,6 +68,7 @@ class QueryBenchMarks(object):
         boundLens = boundLens.repeat(self.numSamps)
         self.boundLens = boundLens
 
+        # Put if clause if numsamps is not array
         self.numSamps = np.broadcast_arrays(numSamps, self.boundLens)[0]
 
         self.Ra = Ra
@@ -88,6 +89,7 @@ class QueryBenchMarks(object):
                     fp.write('None')
                 else:
                     fp.write(self.constraints)
+        self.numRequests = len(self.boundLens)
 
         self.df = df
 
@@ -266,52 +268,82 @@ class QueryBenchMarks(object):
         figure object having plots of the results 
         """
 
-        fig = self.plotBenchMarks(self.results, dropwidths=False)
+        fig = self.plotBenchMarks(results=self.results)
         fig.savefig(self.name + '.pdf')
         return fig
 
     @staticmethod
-    def plotBenchMarks(results, dropwidths=False, **kwargs):
+    def plotBenchMarks(results, overplotonfig=None, **kwargs):
         """
 
-        Parameters :
+        Parameters
         ----------
-        results : `pandas.DataFrame` with certain columns 
-        dropwidths :
+        results: `pandas.DataFrame` with certain columns 
         """
 
         res = results
-        fig, ax = plt.subplots(2, 2)
-        if dropwidths:
-            raise ValueError('Not implemented yet')
+        res.sort('boundLen', inplace=True)
+        if overplotonfig is None:
+            fig, ax = plt.subplots(2, 2)
+        else:
+            fig = overplotonfig
+
+        print 'TRying to print dictionary', kwargs 
+        if 'fmto' in kwargs.keys():
+            myfmto = kwargs['fmto']
+            print 'fmto found in keys, var myfmto set to', myfmto
+        else:
+            myfmto = 'ko'
+        if 'fmts' in kwargs.keys():
+            myfmts = kwargs['fmts']
+        else:
+            myfmts = 'rs'
+        print myfmto , myfmts
+
+
+        # if dropwidths:
+        #    raise ValueError('Not implemented yet')
+
         # Plot the statistics of the query times with estimates of uncertainty
-        ax[0, 0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
-                          fmt='ko')
-        ax[0, 1].errorbar(np.log10(res.numObjects), res.deltaTime,
+        fig.axes[0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
+        # ax[0, 0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
+                          fmt=myfmto)
+        fig.axes[1].errorbar(np.log10(res.numObjects), res.deltaTime,
+        # ax[0, 1].errorbar(np.log10(res.numObjects), res.deltaTime,
                           xerr=np.log(10) * res.numObjectsWidth /
                           res.numObjects,
-                          yerr=res.deltaTwidth, fmt='ko')
-        ax[1, 0].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
-                          fmt='ko')
-        ax[1, 1].errorbar(np.log10(res.numObjects), res.deltaTimeFull,
+                          yerr=res.deltaTwidth, fmt=myfmto)
+        fig.axes[2].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
+        # ax[1, 0].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
+                          fmt=myfmto)
+        fig.axes[3].errorbar(np.log10(res.numObjects), res.deltaTimeFull,
+        # ax[1, 1].errorbar(np.log10(res.numObjects), res.deltaTimeFull,
                           xerr=np.log(10) * res.numObjectsWidth /
                           res.numObjects,
-                          yerr=res.deltaTFullwidth, fmt='ko')
+                          yerr=res.deltaTFullwidth, fmt=myfmto)
 
         # Plot simple, proportional to area query times to guide the eye
-        ax[0, 0].plot(res.boundLen,
+        fig.axes[0].plot(res.boundLen,
+        # ax[0, 0].plot(res.boundLen,
                       (res.deltaTime.iloc[0] / res.boundLen.iloc[0] ** 2)
-                      * res.boundLen ** 2.0, 'rs')
-        ax[0, 1].plot(np.log10(res.numObjects),
+                      * res.boundLen ** 2.0, myfmts)
+        fig.axes[1].plot(np.log10(res.numObjects),
+        # ax[0, 1].plot(np.log10(res.numObjects),
                       (res.deltaTime.iloc[0] / res.boundLen.iloc[0] ** 2)
-                      * res.boundLen ** 2.0, 'rs')
+                      * res.boundLen ** 2.0, myfmts)
 
         # Set up axes labels  and grids
-        ax[0, 0].set_ylabel('Query Time')
-        ax[1, 0].set_ylabel('Query Time for Focal Plane')
-        ax[1, 0].set_xlabel('Circle Radius')
-        ax[1, 1].set_xlabel(r'$\log_{10}(num Objects)$')
-        # ax.grid(True)
+        # ax[0, 0].set_ylabel('Query Time')
+        fig.axes[0].set_ylabel('Query Time')
+        fig.axes[2].set_ylabel('Query Time for Focal Plane')
+        # ax[1, 0].set_ylabel('Query Time for Focal Plane')
+        fig.axes[2].set_xlabel('Circle Radius')
+        # ax[1, 0].set_xlabel('Circle Radius')
+        fig.axes[3].set_xlabel(r'$\log_{10}(num Objects)$')
+        # ax[1, 1].set_xlabel(r'$\log_{10}(num Objects)$')
+
+        # put in a grid
+        map(lambda x: x.grid(True), fig.axes)
 
         return fig
 
