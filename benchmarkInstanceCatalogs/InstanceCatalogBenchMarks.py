@@ -68,6 +68,7 @@ class QueryBenchMarks(object):
         boundLens = boundLens.repeat(self.numSamps)
         self.boundLens = boundLens
 
+        # Put if clause if numsamps is not array
         self.numSamps = np.broadcast_arrays(numSamps, self.boundLens)[0]
 
         self.Ra = Ra
@@ -88,6 +89,7 @@ class QueryBenchMarks(object):
                     fp.write('None')
                 else:
                     fp.write(self.constraints)
+        self.numRequests = len(self.boundLens)
 
         self.df = df
 
@@ -266,52 +268,92 @@ class QueryBenchMarks(object):
         figure object having plots of the results 
         """
 
-        fig = self.plotBenchMarks(self.results, dropwidths=False)
+        fig = self.plotBenchMarks(results=self.results)
         fig.savefig(self.name + '.pdf')
         return fig
 
     @staticmethod
-    def plotBenchMarks(results, dropwidths=False, **kwargs):
+    def plotBenchMarks(results, overplotonfig=None, **kwargs):
         """
 
-        Parameters :
+        Parameters
         ----------
-        results : `pandas.DataFrame` with certain columns 
-        dropwidths :
+        results: `pandas.DataFrame` with certain columns 
         """
 
         res = results
-        fig, ax = plt.subplots(2, 2)
-        if dropwidths:
-            raise ValueError('Not implemented yet')
-        # Plot the statistics of the query times with estimates of uncertainty
-        ax[0, 0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
-                          fmt='ko')
-        ax[0, 1].errorbar(np.log10(res.numObjects), res.deltaTime,
-                          xerr=np.log(10) * res.numObjectsWidth /
-                          res.numObjects,
-                          yerr=res.deltaTwidth, fmt='ko')
-        ax[1, 0].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
-                          fmt='ko')
-        ax[1, 1].errorbar(np.log10(res.numObjects), res.deltaTimeFull,
-                          xerr=np.log(10) * res.numObjectsWidth /
-                          res.numObjects,
-                          yerr=res.deltaTFullwidth, fmt='ko')
+        res.sort('boundLen', inplace=True)
+        if overplotonfig is None:
+            fig = plt.figure()
+            # fig, ax = plt.subplots(2, 2, sharex=[0,2], sharey=True)
+            ax1 = fig.add_subplot(2, 2, 1)
+            ax2 = fig.add_subplot(2, 2, 2, sharey=ax1)
+            ax3 = fig.add_subplot(2, 2, 3, sharex=ax1)
+            ax4 = fig.add_subplot(2, 2, 4, sharex=ax2, sharey=ax3)
+        else:
+            fig = overplotonfig
+        
+        # Check if the format of points is specified through kwargs, 
+        # Else put in default values
+        if 'fmto' in kwargs.keys():
+            myfmto = kwargs['fmto']
+        else:
+            myfmto = 'ko'
+        if 'fmts' in kwargs.keys():
+            myfmts = kwargs['fmts']
+        else:
+            myfmts = 'rs'
 
+
+        # Plot the statistics of the query times with estimates of uncertainty
+        fig.axes[0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
+        # ax[0, 0].errorbar(res.boundLen, res.deltaTime, res.deltaTwidth,
+                          fmt=myfmto)
+        fig.axes[1].errorbar(np.log10(res.numObjects), res.deltaTime,
+        # ax[0, 1].errorbar(np.log10(res.numObjects), res.deltaTime,
+                          xerr=np.log(10) * res.numObjectsWidth /
+                          res.numObjects,
+                          yerr=res.deltaTwidth, fmt=myfmto)
+        # yt = fig.axes[1].get_yticklabels()
+        # print yt
+        # fig.axes[1].set_yticklabels(yt, visible=False)
+        fig.axes[2].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
+        # ax[1, 0].errorbar(res.boundLen, res.deltaTimeFull, res.deltaTFullwidth,
+                          fmt=myfmto)
+        fig.axes[3].errorbar(np.log10(res.numObjects), res.deltaTimeFull,
+        # ax[1, 1].errorbar(np.log10(res.numObjects), res.deltaTimeFull,
+                          xerr=np.log(10) * res.numObjectsWidth /
+                          res.numObjects,
+                          yerr=res.deltaTFullwidth, fmt=myfmto)
+
+        # yt = fig.axes[3].get_yticklabels()
+        # print yt
+        # fig.axes[3].set_yticklabels(yt, visible=False)
         # Plot simple, proportional to area query times to guide the eye
-        ax[0, 0].plot(res.boundLen,
+        fig.axes[0].plot(res.boundLen,
+        # ax[0, 0].plot(res.boundLen,
                       (res.deltaTime.iloc[0] / res.boundLen.iloc[0] ** 2)
-                      * res.boundLen ** 2.0, 'rs')
-        ax[0, 1].plot(np.log10(res.numObjects),
+                      * res.boundLen ** 2.0, myfmts)
+        fig.axes[1].plot(np.log10(res.numObjects),
+        # ax[0, 1].plot(np.log10(res.numObjects),
                       (res.deltaTime.iloc[0] / res.boundLen.iloc[0] ** 2)
-                      * res.boundLen ** 2.0, 'rs')
+                      * res.boundLen ** 2.0, myfmts)
 
         # Set up axes labels  and grids
-        ax[0, 0].set_ylabel('Query Time')
-        ax[1, 0].set_ylabel('Query Time for Focal Plane')
-        ax[1, 0].set_xlabel('Circle Radius')
-        ax[1, 1].set_xlabel(r'$\log_{10}(num Objects)$')
-        # ax.grid(True)
+        # ax[0, 0].set_ylabel('Query Time')
+        fig.axes[0].set_ylabel('Query Time')
+        fig.axes[2].set_ylabel('Query Time for Focal Plane')
+        # ax[1, 0].set_ylabel('Query Time for Focal Plane')
+        fig.axes[2].set_xlabel('Circle Radius')
+        # ax[1, 0].set_xlabel('Circle Radius')
+        fig.axes[3].set_xlabel(r'$\log_{10}(num Objects)$')
+        # ax[1, 1].set_xlabel(r'$\log_{10}(num Objects)$')
+
+        # put in a grid
+        map(lambda x: x.grid(True), fig.axes)
+
+        # tighten layout of plots
+        fig.set_tight_layout(True)
 
         return fig
 
