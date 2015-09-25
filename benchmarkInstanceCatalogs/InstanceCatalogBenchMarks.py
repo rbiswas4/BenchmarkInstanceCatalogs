@@ -89,8 +89,11 @@ class QueryBenchMarks(object):
                     fp.write('None')
                 else:
                     fp.write(self.constraints)
+
         self.numRequests = len(self.boundLens)
 
+        # Set the queries files to the input
+        # which may be None
         self.df = df
 
     @property
@@ -254,7 +257,8 @@ class QueryBenchMarks(object):
     def aggregateResults(self):
 
         for i, boundLen in enumerate(self.boundLens):
-            print 'boundLen used', i, boundLen
+            print 'numRequests, reuest number, boundLen used', \
+                    self.numRequests, i, boundLen
             df = self.benchMarkLen()
             if self.df is None:
                 self.df = df
@@ -279,6 +283,10 @@ class QueryBenchMarks(object):
         Parameters
         ----------
         results: `pandas.DataFrame` with certain columns 
+        overplotonfig : `matplotlib.pyplot.figure` object
+        kwargs: dictionary with keys 'myfmts', and 'myfmto'
+
+        Returns : `matplotlib.pyplot.Figure` object
         """
 
         res = results
