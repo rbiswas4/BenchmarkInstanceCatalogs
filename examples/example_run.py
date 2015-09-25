@@ -23,7 +23,7 @@ boundLens = np.arange(0.02, 0.1, 0.02)
 opsimDBHDF ='/Users/rbiswas/data/LSST/OpSimData/storage.h5'
 gcb = QueryBenchMarks.fromOpSimDF(instanceCatChild=galCopy, dbObject=galDB,
                                   opSimHDF=opsimDBHDF, boundLens=boundLens,
-                                  numSamps=3, name='small_magneto_test')
+                                  numSamps=3, name='small_test_run')
 # Look at the size 
 print gcb.coords.size
 print gcb.boundLens.size
