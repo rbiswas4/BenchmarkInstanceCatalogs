@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import os
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -34,7 +35,7 @@ class QueryBenchMarks(object):
      """
 
     def __init__(self, instanceCatChild, dbObject, boundLens, Ra, Dec,
-                 name='catsim', numSamps=3, mjd=572013.,
+                 name='catsim', numSamps=3, mjd=572013., cache='./',
                  constraints=None, checkpoint=True, df=None):
         """
         instanceCatChild : instance of a class inheriting from
@@ -52,7 +53,9 @@ class QueryBenchMarks(object):
         """
         self.checkpoint = checkpoint
         self.constraints = constraints
-        self.name = name
+        self.dirname = os.path.join(cache, name)
+        self.name = os.path.join(self.dirname, name)
+        self.ensureDirorDie()
         self.numSamps = numSamps
         self.mjd = mjd
         self.dbObject = dbObject
@@ -103,6 +106,22 @@ class QueryBenchMarks(object):
     @property
     def boundLength_fname(self):
         return self.name + '_coords.dat'
+
+    def ensureDirorDie(self):
+        """
+        if `self.dirname` does not exist, create it. If it exists and is
+        non-empty raise Exception and crash.
+
+        """
+        import os
+        if os.path.isdir(self.dirname):
+            if len(os.listdir(self.dirname)) > 0:
+                raise ValueError('Directory to be created exists and is not'
+                                 'empty')
+        else: 
+            os.makedirs(self.dirname)
+        return
+
 
     @classmethod
     def fromCheckPoint(cls, instanceCatChild, dbObject, cacheDir, name,
