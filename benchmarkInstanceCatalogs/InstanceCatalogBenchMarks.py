@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import os
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -34,7 +35,7 @@ class QueryBenchMarks(object):
      """
 
     def __init__(self, instanceCatChild, dbObject, boundLens, Ra, Dec,
-                 name='catsim', numSamps=3, mjd=572013.,
+                 name='catsim', numSamps=3, mjd=572013., cache=None,
                  constraints=None, checkpoint=True, df=None):
         """
         instanceCatChild : instance of a class inheriting from
@@ -52,7 +53,12 @@ class QueryBenchMarks(object):
         """
         self.checkpoint = checkpoint
         self.constraints = constraints
-        self.name = name
+        if cache is not None:
+            self.dirname = cache
+        else: 
+            self.dirname = name
+        self.name = os.path.join(self.dirname, name)
+        self.ensureDirorDie()
         self.numSamps = numSamps
         self.mjd = mjd
         self.dbObject = dbObject
@@ -104,8 +110,24 @@ class QueryBenchMarks(object):
     def boundLength_fname(self):
         return self.name + '_coords.dat'
 
+    def ensureDirorDie(self):
+        """
+        if `self.dirname` does not exist, create it. If it exists and is
+        non-empty raise Exception and crash.
+
+        """
+        import os
+        if os.path.isdir(self.dirname):
+            if len(os.listdir(self.dirname)) > 0:
+                raise ValueError('Directory to be created exists and is not'
+                                 'empty')
+        else: 
+            os.makedirs(self.dirname)
+        return
+
+
     @classmethod
-    def fromCheckPoint(cls, instanceCatChild, dbObject, cacheDir, name,
+    def fromCheckPoint(cls, instanceCatChild, dbObject, cache, name,
                        dffname=None,
                        mjd=572013., constraints=None, checkpoint=True):
         """
@@ -122,9 +144,9 @@ class QueryBenchMarks(object):
         if dffname is None:
             dffname = name + 'constraints.dat'
         df = pd.read_hdf(dffname, 'table')
-        boundLengthfname = os.path.join(cacheDir, name + '_boundLens.dat')
+        boundLengthfname = os.path.join(cache, name + '_boundLens.dat')
         boundLens = np.loadtxt(boundLengthfname).flatten()
-        coordsfname = os.path.join(cacheDir, name + '_coords.dat')
+        coordsfname = os.path.join(cache, name + '_coords.dat')
         coords = np.loadtxt(coordsfname)
         ra, dec = zip(*coords)
         Ra = np.asarray(ra)
@@ -138,7 +160,7 @@ class QueryBenchMarks(object):
 
     @classmethod
     def fromOpSimDF(cls, instanceCatChild, dbObject, opSimHDF, boundLens,
-                    mjd=57210, numSamps=1,
+                    mjd=57210, numSamps=1, cache=None,
                     constraints=None, checkpoint=True, name='test',
                     summaryTable='table', df=None):
         """
@@ -170,7 +192,7 @@ class QueryBenchMarks(object):
 
         return cls(instanceCatChild=instanceCatChild, dbObject=dbObject,
                    boundLens=boundLens, Ra=ra, Dec=dec, numSamps=numSamps,
-                   mjd=mjd, name=name, constraints=constraints, df=df)
+                   mjd=mjd, name=name, cache=cache, constraints=constraints, df=df)
 
     @property
     def results(self):
