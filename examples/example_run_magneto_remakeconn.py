@@ -14,7 +14,8 @@ import lsst.sims.catUtils.baseCatalogModels as bcm
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 
 
-
+saveafter = 50
+numrows = 5000
 # Create a child of the InstanceCatalog Class
 class galCopy(InstanceCatalog):
     column_outputs = ['id', 'raJ2000', 'decJ2000', 'redshift']
@@ -30,19 +31,20 @@ case = []
 numQueries = []
 success = []
 times = []
+timeSec = []
 def get_timestamp():
     ts = time.time()
     dt = datetime.datetime.fromtimestamp(ts)
     dts = dt.isoformat()
-    print dts
-    return dts
+    return ts, dts
 
-for i in range(5000):
+for i in range(numrows):
     print ' Case number ', i 
     case.append(i)
-    ts = get_timestamp()
+    ts, dts = get_timestamp()
     print type(ts)
-    times.append(ts)
+    times.append(dts)
+    timeSec.append(ts)
     try:
         galDB = CatalogDBObject.from_objid('galaxyTiled')
         print 'dbobject created '
@@ -53,13 +55,16 @@ for i in range(5000):
         gcb.aggregateResults()
         # fig = gcb.plots
         numQ = len(gcb.df)
-        print 'Numbers of queries', numQ
         shutil.rmtree(gcb.dirname)
-        numQueries.append(numQ)
-        success.append(1)
+        done = 1
     except:
-        numQueries.append(0)
-        success.append(0)
-    df = pd.DataFrame({'record': case, 'success': success,
-                       'queries': numQueries, 'Time': times})
-    df.to_csv('results.csv')
+        numQ = 0
+        done = 0
+    success.append(done)
+    numQueries.append(numQ)
+    print 'Numbers of queries', numQ
+    if (i % saveafter) == 0:
+        df = pd.DataFrame({'record': case, 'success': success,
+            'queries': numQueries, 'Time': times,
+            'timesec':timeSec}, index=case)
+        df.to_csv('results.csv', index=False)
