@@ -1,5 +1,22 @@
 #!/usr/bin/env python
+"""
+Class to benchmark `lsst.sims.catalogs.measures.instance.InstanceCatalog` 
+queries to fatboy for different objects using different instances of 
+`lsst.sims.utils.ObservationMetaData`. 
 
+Important features are the ability to conveniently
+
+- time queries over regions of varying sizes at different locations in the sky input through a list of sizes, and field centers in Ra, Dec in degrees requested.
+- Instantiate the set of pointings as unique pointings from by choosing LSST fields 
+- Serialize the output of past queries and record set of outstanding requests to checkpoint the state
+- Restart from checkpoints 
+- record information on both the database being used, internet and user information
+- record time stamps
+- record data quantity
+- Do meaningful calculations / plot results even when the number of samples is 1.
+"""
+
+ 
 import numpy as np
 import os
 import time
@@ -11,52 +28,56 @@ __all__ = ['QueryBenchMarks']
 
 
 class QueryBenchMarks(object):
-
     """
-    Class to benchmark `lsst.sims.catalogs.measures.instance.InstanceCatalog` 
-    queries to fatboy for different objects using different instances of 
-    `lsst.sims.utils.ObservationMetaData`. 
+    Object setup to benchmark functionality on child classes of 
+    `lsst.sims.catalogs.measures.instances.InstanceCatalog`
 
-    Important features are the ability to conveniently
-    - time queries over regions of varying sizes at different locations in 
-    the sky input through a list of sizes, and field centers in Ra, Dec in 
-    degrees requested.
-    - Instantiate the set of pointings as unique pointings from by choosing 
-    LSST fields 
-    - Serialize the output of past queries and record set of outstanding
-    requests to checkpoint the state
-    - Restart from checkpoints 
-    - record information on both the database being used, internet and user
-    information
-    - record time stamps
-    - record data quantity
-    - Do meaningful calculations / plot results even when the number of samples
-    is 1.
-     """
-
+    Parameters
+    ----------
+    instanceCatChild : instance of a class inheriting from
+        `lsst.sims.catalogs.measures.instances.InstanceCatalog`, mandatory
+        Class that will be queried on the database
+    boundLens : array like, of floats 
+        size of `lsst.sims.utils.ObsMetaData` BoundLengths in degrees
+    numSamps : arrray-like or float, optional, defaults to 3.
+        If array like must have the same len as boundLens
+    Ra : array-like, floats, degrees 
+        length should be sum(num_samples)
+    Dec : array-like, floats, degrees
+        length should be sum(num_samples)
+    name : string, optional
+    """
     def __init__(self, instanceCatChild, dbObject, boundLens, Ra, Dec,
                  name='catsim', numSamps=3, mjd=572013., cache=None,
                  constraints=None, checkpoint=True, df=None):
+
         """
+        Parameters
+        ----------
         instanceCatChild : instance of a class inheriting from
             `lsst.sims.catalogs.measures.instances.InstanceCatalog`, mandatory
             Class that will be queried on the database
         boundLens : array like, of floats
                 size of `lsst.sims.utils.ObsMetaData` BoundLengths in degrees
-        Ra : arrayLike, floats, degrees 
+        numSamps : arrray-like or float, optional, defaults to 3.
+            If array like must have the same len as boundLens
+        Ra : array-like, floats, degrees 
             length should be sum(num_samples)
-        Dec : arrayLike, floats, degrees
+        Dec : array-like, floats, degrees
             length should be sum(num_samples)
-        numSamps : arrray-like or float. If array like must have the same len
-            as boundLens
 
+        Attributes
+        ----------
         """
+
         self.checkpoint = checkpoint
         self.constraints = constraints
+
         if cache is not None:
             self.dirname = cache
         else: 
             self.dirname = name
+
         self.name = os.path.join(self.dirname, name)
         self.ensureDirorDie()
         self.numSamps = numSamps

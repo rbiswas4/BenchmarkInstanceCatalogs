@@ -7,9 +7,9 @@ Welcome to BenchmarkInstanceCatalogs's documentation!
 =====================================================
 
 Contents:
-
 .. toctree::
    :maxdepth: 2
+
 .. automodule:: benchmarkInstanceCatalogs.InstanceCatalogBenchMarks
     :members:
 
@@ -20,3 +20,11 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+
+Usage
+=====
+.. toctree::
+    :maxdepth: 1
+
+
+    reference
