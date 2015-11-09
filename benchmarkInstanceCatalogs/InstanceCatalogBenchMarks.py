@@ -141,7 +141,7 @@ class QueryBenchMarks(object):
         if os.path.isdir(self.dirname):
             if len(os.listdir(self.dirname)) > 0:
                 raise ValueError('Directory to be created exists and is not'
-                                 'empty')
+                                 ' empty')
         else: 
             os.makedirs(self.dirname)
         return
