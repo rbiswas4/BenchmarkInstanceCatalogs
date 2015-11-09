@@ -108,10 +108,10 @@ class QueryBenchMarks(object):
         np.random.shuffle(self.coords)
 
         if df is None:
-            np.savetxt(name + '_Init_boundlens.dat', self.boundLens)
-            np.savetxt(name + '_Init_numSamps.dat', self.numSamps)
-            np.savetxt(name + '_Init_coords.dat', self.coords)
-            with open(name + 'constraints.dat','w') as fp:
+            np.savetxt(self.name + '_Init_boundlens.dat', self.boundLens)
+            np.savetxt(self.name + '_Init_numSamps.dat', self.numSamps)
+            np.savetxt(self.name + '_Init_coords.dat', self.coords)
+            with open(self.name + 'constraints.dat','w') as fp:
                 if self.constraints is None:
                     fp.write('None')
                 else:
