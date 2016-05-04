@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# usage: 
+# ./"$1" script_to_profile statisticsFile outfileFromcProfile
 outfile='prof'
 statsfile='stats.txt'
 
