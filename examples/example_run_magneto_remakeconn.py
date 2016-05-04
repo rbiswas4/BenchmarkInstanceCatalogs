@@ -62,9 +62,9 @@ for i in range(numrows):
         done = 0
     success.append(done)
     numQueries.append(numQ)
-    print 'Numbers of queries', numQ
+    print 'Numbers of queries', numQ, 'success', done
     if (i % saveafter) == 0:
         df = pd.DataFrame({'record': case, 'success': success,
             'queries': numQueries, 'Time': times,
             'timesec':timeSec}, index=case)
-        df.to_csv('results.csv', index=False)
+        df.to_csv('results_after.csv', index=False)
